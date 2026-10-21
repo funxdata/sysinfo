@@ -15,4 +15,5 @@ pub use crate::ffi::sys::post_memory_info;
 pub use crate::ffi::sys::post_network_info;
 pub use crate::ffi::sys::post_process_list;
 pub use crate::ffi::sys::post_system_basic_info;
-
+pub use crate::ffi::dialog::post_choose_dir;
+pub use crate::ffi::dialog::post_choose_file;
