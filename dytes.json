@@ -1,0 +1,19 @@
+{
+  "name": "sysinfo",
+  "version": "0.1.0",
+  "description": "system information and native file dialogs",
+  "keywords": ["sysinfo", "system", "dialog"],
+  "author": "funxdata",
+  "type": "sys",
+  "platform-exports": {
+    "windows": {
+      "./target/release/sys_info.dll": "sysinfo.dll"
+    },
+    "linux": {
+      "./target/release/libsys_info.so": "sysinfo.so"
+    },
+    "macos": {
+      "./target/release/libsys_info.dylib": "sysinfo.dylib"
+    }
+  }
+}
