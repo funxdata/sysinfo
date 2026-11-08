@@ -1,41 +1,9 @@
-use std::sync::Mutex;
-use sysinfo::System;
+use crate::utils::state;
 
-use crate::utils::errcode;
-
-static SYSTEM: Mutex<Option<System>> = Mutex::new(None);
-
-/// 获取或初始化全局 System 实例（sysinfo 需要保留历史值计算差值）
-fn with_system<F, R>(f: F) -> Result<R, (i32, String)>
-where
-    F: FnOnce(&System) -> R,
-{
-    let mut guard = SYSTEM
-        .lock()
-        .map_err(|e| (errcode::ERR_MEMORY_INFO, format!("lock failed: {}", e)))?;
-
-    if guard.is_none() {
-        *guard = Some(System::new());
-    }
-
-    let sys = guard.as_ref().unwrap();
-    Ok(f(sys))
-}
-
-/// 刷新并获取内存信息
+/// 刷新并获取内存信息。
 pub fn get_memory_info() -> Result<serde_json::Value, (i32, String)> {
-    // 先刷新
-    {
-        let mut guard = SYSTEM
-            .lock()
-            .map_err(|e| (errcode::ERR_MEMORY_INFO, format!("lock failed: {}", e)))?;
-        if guard.is_none() {
-            *guard = Some(System::new());
-        }
-        guard.as_mut().unwrap().refresh_memory();
-    }
-
-    with_system(|sys| {
+    state::with_system(|sys| {
+        sys.refresh_memory();
         let total = sys.total_memory();
         let used = sys.used_memory();
         let free = sys.free_memory();

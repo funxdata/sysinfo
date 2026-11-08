@@ -25,7 +25,10 @@ where
     if guard.is_none() {
         *guard = Some(System::new());
     }
-    Ok(f(guard.as_mut().unwrap()))
+    let system = guard
+        .as_mut()
+        .ok_or_else(|| (errcode::ERR_INTERNAL_LOCK, "system state unavailable".to_string()))?;
+    Ok(f(system))
 }
 
 /// 在全局 Disks 上执行闭包，必要时初始化
@@ -39,7 +42,10 @@ where
     if guard.is_none() {
         *guard = Some(Disks::new_with_refreshed_list());
     }
-    Ok(f(guard.as_mut().unwrap()))
+    let disks = guard
+        .as_mut()
+        .ok_or_else(|| (errcode::ERR_INTERNAL_LOCK, "disks state unavailable".to_string()))?;
+    Ok(f(disks))
 }
 
 /// 在全局 Networks 上执行闭包，必要时初始化
@@ -53,7 +59,10 @@ where
     if guard.is_none() {
         *guard = Some(Networks::new_with_refreshed_list());
     }
-    Ok(f(guard.as_mut().unwrap()))
+    let networks = guard
+        .as_mut()
+        .ok_or_else(|| (errcode::ERR_INTERNAL_LOCK, "networks state unavailable".to_string()))?;
+    Ok(f(networks))
 }
 
 /// 在全局 Components 上执行闭包，必要时初始化
@@ -67,7 +76,10 @@ where
     if guard.is_none() {
         *guard = Some(Components::new_with_refreshed_list());
     }
-    Ok(f(guard.as_mut().unwrap()))
+    let components = guard
+        .as_mut()
+        .ok_or_else(|| (errcode::ERR_INTERNAL_LOCK, "components state unavailable".to_string()))?;
+    Ok(f(components))
 }
 
 
