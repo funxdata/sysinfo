@@ -1,9 +1,13 @@
 {
   "name": "sysinfo",
   "uuid": "86a6db59-026d-4dfd-a138-a5708cfa141b",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "system information and native file dialogs",
-  "keywords": ["sysinfo", "system", "dialog"],
+  "keywords": [
+    "sysinfo",
+    "system",
+    "dialog"
+  ],
   "author": "funxdata",
   "type": "sys",
   "platform-exports": {
