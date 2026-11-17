@@ -1,14 +1,18 @@
 [package]
 name = "sys_info"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
+rust-version = "1.82"
+description = "System information and native file dialogs exposed over C ABI"
+license = "MIT"
+repository = "https://github.com/funxdata/sysinfo"
+keywords = ["sysinfo", "ffi", "system", "dialog", "cross-platform"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 name = "sys_info"
 
 [dependencies]
-libc = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sysinfo = "0.39"

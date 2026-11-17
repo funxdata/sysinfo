@@ -4,7 +4,7 @@ use std::ffi::CString;
 
 use common::{call_raw, new_buf};
 
-use sys_info::post_create_dir;
+use sys_info::{post_create_dir, post_cur_dir};
 
 #[test]
 fn null_input_returns_error_json() {
@@ -39,9 +39,8 @@ fn missing_field_json() {
 
 #[test]
 fn null_output_buffer_returns_minus_one() {
-    let c = CString::new(r#"{"dir_name":"x"}"#).unwrap();
-    let ret = post_create_dir(c.as_ptr(), std::ptr::null_mut());
+    // 使用无副作用的 post_cur_dir，避免像 post_create_dir 那样在仓库里留下目录
+    let c = CString::new("{}").unwrap();
+    let ret = post_cur_dir(c.as_ptr(), std::ptr::null_mut());
     assert_eq!(ret, -1);
 }
-
-

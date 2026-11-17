@@ -436,9 +436,8 @@ dependencies = [
 
 [[package]]
 name = "sys_info"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
- "libc",
  "rfd",
  "serde",
  "serde_json",

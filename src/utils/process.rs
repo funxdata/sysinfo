@@ -39,10 +39,8 @@ pub fn get_process_list(page: PageInput) -> Result<serde_json::Value, (i32, Stri
             .skip(offset)
             .take(limit)
             .map(|(pid, p)| {
-                let mut name = p.name().to_string_lossy().into_owned();
-                if name.len() > 128 {
-                    name.truncate(128);
-                }
+                // 按字符截断，避免在多字节字符中间截断导致 panic
+                let name: String = p.name().to_string_lossy().chars().take(128).collect();
                 serde_json::json!({
                     "pid": pid.as_u32(),
                     "name": name,

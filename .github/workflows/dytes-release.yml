@@ -57,6 +57,8 @@ jobs:
       - name: Setup Rust
         if: needs.prepare.outputs.build == 'cargo'
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - name: Install Cargo build dependencies (Unix)
         if: needs.prepare.outputs.build == 'cargo' && matrix.platform != 'windows'
@@ -92,6 +94,21 @@ jobs:
         shell: bash
         run: cargo build --release
 
+      - name: Format check
+        if: needs.prepare.outputs.build == 'cargo' && matrix.platform == 'windows'
+        shell: bash
+        run: cargo fmt --check
+
+      - name: Clippy
+        if: needs.prepare.outputs.build == 'cargo' && matrix.platform == 'windows'
+        shell: bash
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        if: needs.prepare.outputs.build == 'cargo'
+        shell: bash
+        run: cargo test
+
       - name: Build (cmake)
         if: needs.prepare.outputs.build == 'cmake'
         shell: bash
@@ -99,35 +116,37 @@ jobs:
           cmake -S . -B build -G Ninja -DBUILD_TESTS=OFF
           cmake --build build --config Release
 
-      - name: Publish with dytes
+      - name: Test and publish with dytes
         shell: bash
         env:
-          DYTES_VERSION: "0.1.20"
+          DYTES_VERSION: "0.2.3"
         run: |
           set -euo pipefail
           case "${{ runner.os }}" in
             Windows) asset="dytes-windows.exe"; bin="dytes.exe"; platform="windows/dytes.exe" ;;
-            Linux)   asset="dytes-linux";       bin="dytes";       platform="linux/dytes" ;;
-            macOS)   asset="dytes-macos";       bin="dytes";       platform="macos/dytes" ;;
+            Linux)   asset="dytes-linux.bin";   bin="dytes";       platform="linux/dytes.bin" ;;
+            macOS)   asset="dytes-macos.app";   bin="dytes";       platform="macos/dytes.app" ;;
             *) echo "unsupported runner: ${{ runner.os }}" >&2; exit 1 ;;
           esac
           bin_dir="${RUNNER_TEMP}/dytes-bin"
           mkdir -p "${bin_dir}"
-          github_url="https://github.com/dytescn/dytes/releases/download/v${DYTES_VERSION}/${asset}"
           cdn_url="https://packages.funxdata.com/core/dytes/${DYTES_VERSION}/${platform}"
+          github_url="https://github.com/dytescn/dytes/releases/download/v${DYTES_VERSION}/${asset}"
           downloaded=0
-          for i in $(seq 1 12); do
-            if curl -fsSL --retry 2 --retry-all-errors --retry-delay 5 "${github_url}" -o "${bin_dir}/${bin}"; then
+          # 0.2.2 起 dytes 的 GitHub Release 可能缺失，优先使用 packages CDN
+          for i in $(seq 1 6); do
+            if curl -fsSL --retry 2 --retry-all-errors --retry-delay 5 "${cdn_url}" -o "${bin_dir}/${bin}"; then
               downloaded=1
               break
             fi
-            echo "GitHub 下载失败（第 ${i} 次），重试..."
-            sleep 8
+            echo "CDN 下载失败（第 ${i} 次），重试..."
+            sleep 5
           done
           if [ "${downloaded}" -eq 0 ]; then
-            echo "GitHub 下载失败，改用 packages CDN"
-            curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "${cdn_url}" -o "${bin_dir}/${bin}"
+            echo "CDN 下载失败，改用 GitHub Releases"
+            curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "${github_url}" -o "${bin_dir}/${bin}"
           fi
           chmod +x "${bin_dir}/${bin}" 2>/dev/null || true
           "${bin_dir}/${bin}" --version
+          "${bin_dir}/${bin}" test --json
           "${bin_dir}/${bin}" publish

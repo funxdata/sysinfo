@@ -1,6 +1,7 @@
 pub mod cjson;
 pub mod component;
 pub mod cpu;
+pub mod dialog;
 pub mod disk;
 pub mod errcode;
 pub mod file;
@@ -9,4 +10,3 @@ pub mod network;
 pub mod process;
 pub mod state;
 pub mod system;
-pub mod dialog;

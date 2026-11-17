@@ -1,0 +1,8 @@
+{
+  "tasks": {
+    "build": "cd .. && cargo build --release",
+    "dytes:test": "cd .. && dytes test --keep --json",
+    "test": "deno test --allow-ffi --allow-read --allow-write --allow-env ffi_test.ts",
+    "check": "deno task build && deno task dytes:test && deno task test"
+  }
+}

@@ -46,11 +46,11 @@ fn write_json_out(json_out: *mut c_char, value: Value) -> c_int {
     }
 
     // 检查是否超出缓冲区（包括结尾 null）
-    if bytes.len() + 1 > MAX_OUTPUT_LEN {
+    if bytes.len() >= MAX_OUTPUT_LEN {
         return -2;
     }
 
-    debug_assert!(bytes.len() + 1 <= MAX_OUTPUT_LEN);
+    debug_assert!(bytes.len() < MAX_OUTPUT_LEN);
 
     unsafe {
         std::ptr::copy_nonoverlapping(bytes.as_ptr(), json_out as *mut u8, bytes.len());
@@ -58,6 +58,19 @@ fn write_json_out(json_out: *mut c_char, value: Value) -> c_int {
     }
 
     0
+}
+
+/// 在 FFI 边界捕获 panic，避免 unwind 跨过 `extern "C"` 导致宿主进程 abort。
+///
+/// 发生 panic 时返回统一错误 JSON（`ERR_PANIC`），并尽量保持进程存活。
+pub fn guard<F>(json_out: *mut c_char, f: F) -> c_int
+where
+    F: FnOnce() -> c_int,
+{
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(ret) => ret,
+        Err(_) => write_error(json_out, errcode::ERR_PANIC, "internal panic"),
+    }
 }
 
 /// 返回错误 JSON
@@ -84,4 +97,40 @@ pub fn write_success(json_out: *mut c_char, msg: &str, data: Value) -> c_int {
             "msg": msg
         }),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn buffer() -> Vec<c_char> {
+        vec![0 as c_char; MAX_OUTPUT_LEN]
+    }
+
+    #[test]
+    fn write_json_out_null_buffer_returns_minus_one() {
+        assert_eq!(
+            write_json_out(std::ptr::null_mut(), Value::Null),
+            -1,
+            "json_out 为 null 时应返回 -1"
+        );
+    }
+
+    #[test]
+    fn write_json_out_accepts_max_boundary() {
+        let mut buf = buffer();
+        // JSON 字符串 = 内容 + 两个引号，最终长度 MAX_OUTPUT_LEN - 1
+        let value = Value::String("a".repeat(MAX_OUTPUT_LEN - 3));
+        assert_eq!(write_json_out(buf.as_mut_ptr(), value), 0);
+        assert_eq!(buf[MAX_OUTPUT_LEN - 1], 0, "结尾必须写入 NUL");
+    }
+
+    #[test]
+    fn write_json_out_rejects_oversized_output() {
+        let mut buf = buffer();
+        // JSON 长度恰好等于 MAX_OUTPUT_LEN，包含结尾 NUL 时会越界
+        let value = Value::String("a".repeat(MAX_OUTPUT_LEN - 2));
+        assert_eq!(write_json_out(buf.as_mut_ptr(), value), -2);
+        assert!(buf.iter().all(|b| *b == 0), "超长时不应写入缓冲区");
+    }
 }

@@ -24,3 +24,6 @@ target
 # Added by cargo
 
 /target
+
+# dytes 测试环境
+.dytes/

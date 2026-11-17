@@ -17,7 +17,7 @@ pub fn get_network_info() -> Result<serde_json::Value, (i32, String)> {
                     "total_packets_transmitted": data.total_packets_transmitted(),
                     "total_errors_on_received": data.total_errors_on_received(),
                     "total_errors_on_transmitted": data.total_errors_on_transmitted(),
-                    "mac_address": format!("{:?}", data.mac_address()),
+                    "mac_address": data.mac_address().to_string(),
                 })
             })
             .collect();
@@ -28,5 +28,3 @@ pub fn get_network_info() -> Result<serde_json::Value, (i32, String)> {
         })
     })
 }
-
-

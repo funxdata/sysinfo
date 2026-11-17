@@ -1,55 +1,52 @@
 use std::ffi::{c_char, c_int};
 
-use crate::utils::cjson::{parse_json_input, write_error, write_success};
+use crate::utils::cjson::{guard, parse_json_input, write_error, write_success};
 use crate::utils::process::{self, PageInput};
 use crate::utils::{component, cpu, disk, memory, network, system};
 
 /// 系统基础信息：名称、内核版本、OS 版本、主机名、运行时长、启动时间、负载
 #[unsafe(no_mangle)]
-pub extern "C" fn post_system_basic_info(
-    _json_in: *const c_char,
-    json_out: *mut c_char,
-) -> c_int {
-    match system::get_basic_info() {
+pub extern "C" fn post_system_basic_info(_json_in: *const c_char, json_out: *mut c_char) -> c_int {
+    guard(json_out, || match system::get_basic_info() {
         Ok(data) => write_success(json_out, "success", data),
         Err((code, msg)) => write_error(json_out, code, &msg),
-    }
+    })
 }
 
 /// 内存信息
 #[unsafe(no_mangle)]
 pub extern "C" fn post_memory_info(_json_in: *const c_char, json_out: *mut c_char) -> c_int {
-    match memory::get_memory_info() {
+    guard(json_out, || match memory::get_memory_info() {
         Ok(data) => write_success(json_out, "success", data),
         Err((code, msg)) => write_error(json_out, code, &msg),
-    }
+    })
 }
 
 /// CPU 信息
 #[unsafe(no_mangle)]
 pub extern "C" fn post_cpu_info(_json_in: *const c_char, json_out: *mut c_char) -> c_int {
-    match cpu::get_cpu_info() {
+    guard(json_out, || match cpu::get_cpu_info() {
         Ok(data) => write_success(json_out, "success", data),
         Err((code, msg)) => write_error(json_out, code, &msg),
-    }
+    })
 }
 
 /// 磁盘信息
 #[unsafe(no_mangle)]
 pub extern "C" fn post_disk_info(_json_in: *const c_char, json_out: *mut c_char) -> c_int {
-    match disk::get_disk_info() {
+    guard(json_out, || match disk::get_disk_info() {
         Ok(data) => write_success(json_out, "success", data),
         Err((code, msg)) => write_error(json_out, code, &msg),
-    }
+    })
 }
 
 /// 网络接口信息
 #[unsafe(no_mangle)]
 pub extern "C" fn post_network_info(_json_in: *const c_char, json_out: *mut c_char) -> c_int {
-    match network::get_network_info() {
+    guard(json_out, || match network::get_network_info() {
         Ok(data) => write_success(json_out, "success", data),
         Err((code, msg)) => write_error(json_out, code, &msg),
-    }
+    })
 }
 
 /// 进程列表（分页）
@@ -68,31 +65,37 @@ pub extern "C" fn post_network_info(_json_in: *const c_char, json_out: *mut c_ch
 ///   "processes": [ { "pid": 1, "name": "systemd", "memory": ..., "cpu_usage": ..., "status": "..." } ]
 /// }
 /// ```
+///
+/// # Safety
+/// `json_in` 必须为 null 或指向以 null 结尾的有效 UTF-8 C 字符串；
+/// `json_out` 必须至少有 `MAX_OUTPUT_LEN` 字节可用空间。
 #[unsafe(no_mangle)]
-pub extern "C" fn post_process_list(json_in: *const c_char, json_out: *mut c_char) -> c_int {
-    let page: PageInput = if json_in.is_null() {
-        PageInput {
-            limit: None,
-            offset: None,
-        }
-    } else {
-        match unsafe { parse_json_input(json_in) } {
-            Ok(v) => v,
-            Err((code, msg)) => return write_error(json_out, code, &msg),
-        }
-    };
+pub unsafe extern "C" fn post_process_list(json_in: *const c_char, json_out: *mut c_char) -> c_int {
+    guard(json_out, || {
+        let page: PageInput = if json_in.is_null() {
+            PageInput {
+                limit: None,
+                offset: None,
+            }
+        } else {
+            match unsafe { parse_json_input(json_in) } {
+                Ok(v) => v,
+                Err((code, msg)) => return write_error(json_out, code, &msg),
+            }
+        };
 
-    match process::get_process_list(page) {
-        Ok(data) => write_success(json_out, "success", data),
-        Err((code, msg)) => write_error(json_out, code, &msg),
-    }
+        match process::get_process_list(page) {
+            Ok(data) => write_success(json_out, "success", data),
+            Err((code, msg)) => write_error(json_out, code, &msg),
+        }
+    })
 }
 
 /// 温度传感器组件信息
 #[unsafe(no_mangle)]
 pub extern "C" fn post_component_info(_json_in: *const c_char, json_out: *mut c_char) -> c_int {
-    match component::get_component_info() {
+    guard(json_out, || match component::get_component_info() {
         Ok(data) => write_success(json_out, "success", data),
         Err((code, msg)) => write_error(json_out, code, &msg),
-    }
+    })
 }

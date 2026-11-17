@@ -27,8 +27,7 @@ pub fn call(f: FfiFn, input: Option<&str>) -> serde_json::Value {
     let ret = unsafe { f(in_ptr, buf.as_mut_ptr()) };
     assert_eq!(ret, 0, "FFI 返回码应为 0");
     let out = read_buf(&buf);
-    serde_json::from_str(&out)
-        .unwrap_or_else(|e| panic!("输出不是合法 JSON: {e}\n原始输出: {out}"))
+    serde_json::from_str(&out).unwrap_or_else(|e| panic!("输出不是合法 JSON: {e}\n原始输出: {out}"))
 }
 
 pub fn call_no_input(f: FfiFn) -> serde_json::Value {

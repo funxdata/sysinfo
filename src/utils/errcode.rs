@@ -10,14 +10,12 @@ pub const ERR_INVALID_PATH: i32 = 400104;
 // ---- 业务执行错误 ----
 pub const ERR_CURRENT_DIR: i32 = 400900;
 pub const ERR_CREATE_DIR: i32 = 400901;
-pub const ERR_MEMORY_INFO: i32 = 400902;
-pub const ERR_DISK_INFO: i32 = 400903;
-pub const ERR_CPU_INFO: i32 = 400904;
-pub const ERR_NETWORK_INFO: i32 = 400905;
 pub const ERR_PROCESS_INFO: i32 = 400906;
-pub const ERR_COMPONENT_INFO: i32 = 400907;
-pub const ERR_SYSTEM_INFO: i32 = 400908;
+pub const ERR_FILE_INFO: i32 = 400909;
 pub const ERR_INTERNAL_LOCK: i32 = 400999;
+
+// ---- FFI 边界错误 ----
+pub const ERR_PANIC: i32 = 500000;
 
 // ---- 成功 ----
 pub const CODE_SUCCESS: i32 = 200;

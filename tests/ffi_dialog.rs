@@ -8,18 +8,14 @@
 
 mod common;
 
-use common::{call_no_input, new_buf, read_buf};
+use common::call_no_input;
 
 use sys_info::{post_choose_dir, post_choose_file};
 
 /// 断言响应体是合法的统一结构：code == 200，data.path 为 string 或 null
 fn assert_valid_dialog_response(v: &serde_json::Value) {
     assert_eq!(v["code"], 200, "code 应为 200");
-    assert!(
-        v["msg"].is_string(),
-        "msg 应为字符串，实际：{}",
-        v["msg"]
-    );
+    assert!(v["msg"].is_string(), "msg 应为字符串，实际：{}", v["msg"]);
     let path = &v["data"]["path"];
     assert!(
         path.is_string() || path.is_null(),

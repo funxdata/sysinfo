@@ -14,21 +14,37 @@ pub static DISKS: Mutex<Option<Disks>> = Mutex::new(None);
 pub static NETWORKS: Mutex<Option<Networks>> = Mutex::new(None);
 pub static COMPONENTS: Mutex<Option<Components>> = Mutex::new(None);
 
+/// 在全局状态上执行闭包，必要时用 `init` 初始化。
+fn with_state<T, F, R>(
+    state: &Mutex<Option<T>>,
+    name: &str,
+    init: impl FnOnce() -> T,
+    f: F,
+) -> Result<R, (i32, String)>
+where
+    F: FnOnce(&mut T) -> R,
+{
+    let mut guard = state
+        .lock()
+        .map_err(|e| (errcode::ERR_INTERNAL_LOCK, format!("{} lock: {}", name, e)))?;
+    if guard.is_none() {
+        *guard = Some(init());
+    }
+    let value = guard.as_mut().ok_or_else(|| {
+        (
+            errcode::ERR_INTERNAL_LOCK,
+            format!("{} state unavailable", name),
+        )
+    })?;
+    Ok(f(value))
+}
+
 /// 在全局 System 上执行闭包，必要时初始化
 pub fn with_system<F, R>(f: F) -> Result<R, (i32, String)>
 where
     F: FnOnce(&mut System) -> R,
 {
-    let mut guard = SYSTEM
-        .lock()
-        .map_err(|e| (errcode::ERR_INTERNAL_LOCK, format!("system lock: {}", e)))?;
-    if guard.is_none() {
-        *guard = Some(System::new());
-    }
-    let system = guard
-        .as_mut()
-        .ok_or_else(|| (errcode::ERR_INTERNAL_LOCK, "system state unavailable".to_string()))?;
-    Ok(f(system))
+    with_state(&SYSTEM, "system", System::new, f)
 }
 
 /// 在全局 Disks 上执行闭包，必要时初始化
@@ -36,16 +52,7 @@ pub fn with_disks<F, R>(f: F) -> Result<R, (i32, String)>
 where
     F: FnOnce(&mut Disks) -> R,
 {
-    let mut guard = DISKS
-        .lock()
-        .map_err(|e| (errcode::ERR_INTERNAL_LOCK, format!("disks lock: {}", e)))?;
-    if guard.is_none() {
-        *guard = Some(Disks::new_with_refreshed_list());
-    }
-    let disks = guard
-        .as_mut()
-        .ok_or_else(|| (errcode::ERR_INTERNAL_LOCK, "disks state unavailable".to_string()))?;
-    Ok(f(disks))
+    with_state(&DISKS, "disks", Disks::new_with_refreshed_list, f)
 }
 
 /// 在全局 Networks 上执行闭包，必要时初始化
@@ -53,16 +60,7 @@ pub fn with_networks<F, R>(f: F) -> Result<R, (i32, String)>
 where
     F: FnOnce(&mut Networks) -> R,
 {
-    let mut guard = NETWORKS
-        .lock()
-        .map_err(|e| (errcode::ERR_INTERNAL_LOCK, format!("networks lock: {}", e)))?;
-    if guard.is_none() {
-        *guard = Some(Networks::new_with_refreshed_list());
-    }
-    let networks = guard
-        .as_mut()
-        .ok_or_else(|| (errcode::ERR_INTERNAL_LOCK, "networks state unavailable".to_string()))?;
-    Ok(f(networks))
+    with_state(&NETWORKS, "networks", Networks::new_with_refreshed_list, f)
 }
 
 /// 在全局 Components 上执行闭包，必要时初始化
@@ -70,16 +68,10 @@ pub fn with_components<F, R>(f: F) -> Result<R, (i32, String)>
 where
     F: FnOnce(&mut Components) -> R,
 {
-    let mut guard = COMPONENTS
-        .lock()
-        .map_err(|e| (errcode::ERR_INTERNAL_LOCK, format!("components lock: {}", e)))?;
-    if guard.is_none() {
-        *guard = Some(Components::new_with_refreshed_list());
-    }
-    let components = guard
-        .as_mut()
-        .ok_or_else(|| (errcode::ERR_INTERNAL_LOCK, "components state unavailable".to_string()))?;
-    Ok(f(components))
+    with_state(
+        &COMPONENTS,
+        "components",
+        Components::new_with_refreshed_list,
+        f,
+    )
 }
-
-

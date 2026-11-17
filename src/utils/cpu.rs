@@ -27,4 +27,3 @@ pub fn get_cpu_info() -> Result<serde_json::Value, (i32, String)> {
         })
     })
 }
-
